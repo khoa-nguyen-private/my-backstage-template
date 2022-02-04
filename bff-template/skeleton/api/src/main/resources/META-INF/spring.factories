@@ -1,0 +1,2 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+allianz.itmp.mo.api.APIModuleConfiguration

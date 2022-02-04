@@ -1,0 +1,115 @@
+apiVersion: backstage.io/v1beta2
+kind: Template
+metadata:
+  name: taly-customer-journey
+  title: Customer Journey Frontend  (BMP)
+  description: Creates a building blocks based customer journey project including the schematic setup to generate the Angular app (TALY).
+  tags:
+  - recommended
+  - angular
+  - taly
+  - itmp
+  - bmp
+  - journey
+spec:
+  owner: gdf
+  type: service
+  path: '.'
+
+  parameters:
+    - title: Please fill in the following information
+      required:
+        - app_name
+      properties:
+        app_name:
+          title: Name
+          type: string
+          description: The name of the customer journey
+          ui:autofocus: true
+          ui:options:
+            rows: 5
+        description:
+          title: Description
+          type: string
+          description: Help others understand what this customer journey is for
+        headline:
+          title: Journey Headline
+          type: string
+          description: This will show up as the headline of the customer journey
+        owner:
+          title: Owner
+          type: string
+          description: Owner of the component
+          ui:field: OwnerPicker
+          ui:options:
+            allowedKinds: 
+              - Group
+    - title: Choose a location  
+      required:
+        - repoUrl
+      properties: 
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.developer.allianz.io
+
+  steps:
+    - id: template
+      name: Fetch Skeleton + Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          app_name: '{{ parameters.app_name }}'
+          headline: '{{ parameters.headline }}'
+          description: '{{ parameters.description }}'
+          destination: '{{ parseRepoUrl parameters.repoUrl }}'
+          http_port: 8080
+          owner: '{{ parameters.owner }}'
+
+    - id: publish
+      name: Publish
+      action: publish:github
+      input:
+        allowedHosts: ['github.developer.allianz.io']
+        description: 'This is {{ parameters.component_id }}'
+        repoUrl: '{{ parameters.repoUrl }}'
+
+    # - id: publish
+    #   name: Publish
+    #   action: publish:file
+    #   input:
+    #     path: '../../local-publish'
+
+    - id: register
+      name: Register
+      action: catalog:register
+      input:
+        repoContentsUrl: '{{ steps.publish.output.repoContentsUrl }}'
+        catalogInfoPath: '/catalog-info.yaml'
+
+    - id: generate-jenkins-config
+      name: Generate Jenkins Config
+      action: allianz:create-jenkins-config
+      input:
+        app_name: '{{ parameters.app_name }}'
+
+    - id: generate-jenkins-jobs
+      name: Generate Jenkins Jobs
+      action: allianz:create-jobs
+      input:
+        app_name: '{{ parameters.app_name }}'
+
+    - id: trigger-jenkins-build
+      name: Trigger Jenkins Build
+      action: allianz:trigger-jenkins-build
+      input:
+        app_name: '{{ parameters.app_name }}'    
+
+
+  output:
+    remoteUrl: '{{ steps.publish.output.remoteUrl }}'
+    entityRef: '{{ steps.register.output.entityRef }}'

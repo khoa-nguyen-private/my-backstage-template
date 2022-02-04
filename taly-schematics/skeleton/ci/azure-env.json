@@ -1,0 +1,17 @@
+{
+    "prod": {
+      "jenkinsSPId": "itmp-fa-assets-westeurope-test-frontend",
+      "azureSubscriptionId": "bab4c8ac-3d2e-4c0d-a42e-977b285a6c5f",
+      "nexusNpmRepo": "npm-public" ,
+      "environment": "itmp-dynamic",
+      "project":  "${{values.app_name}}",
+      "account":"backstageportal",
+      "type": "blob",
+      "batch":"true",
+      "arguments":"--content-cache-control \'must-revalidate, max-age=300\'",
+      "cdnResourceGroup":"az-itmp-nonprod-we-aztec-dev-frontend-cdn",
+      "cdnEndpoint":"customer-journey",
+      "cdnProfile":"gdf-backstage-workspace",
+      "cdnFileListToPurge":"\'/index.html\' \'/index.json\'"
+    }
+  }

@@ -1,0 +1,46 @@
+---
+
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ .Values.app.deployName }}
+  labels:
+    app: {{ .Values.app.deployName }}
+  annotations:
+    template.alpha.openshift.io/wait-for-ready: "true"
+spec:
+  host: "{{ .Values.app.host.routeContext }}.{{ .Values.app.host.deployDomain }}"
+  port:
+    targetPort: "{{ .Values.app.deployName }}-tcp"
+  tls:
+    termination: edge
+  to:
+    kind: Service
+    name: {{ .Values.app.deployName }}
+    weight: 100
+status:
+  ingress: []
+---
+  {{- if .Values.config.externalUrl.enabled }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: "{{ .Values.app.deployName }}-ext"
+  labels:
+    app: {{ .Values.app.deployName }}
+  annotations:
+    template.alpha.openshift.io/wait-for-ready: "true"
+spec:
+  host: "{{ .Values.app.host.routeContext }}.{{ .Values.app.externalUrl.domain }}"
+  port:
+    targetPort: "{{ .Values.app.deployName }}-tcp"
+  tls:
+    termination: edge
+  to:
+    kind: Service
+    name: {{ .Values.app.deployName }}
+    weight: 100
+status:
+  ingress: []
+
+  {{- end }}

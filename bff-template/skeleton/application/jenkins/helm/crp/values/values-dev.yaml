@@ -1,0 +1,46 @@
+
+app:
+  deployName: "${{values.artifact_id}}"
+  environment: "dev"
+  customerName: "it-master-platform"
+  springProfiles: "crpdev"
+
+
+  image:
+    imageName: "${{values.artifact_id}}"
+#    tag: "core" - tag defined by jenkins job
+    imageStreamNamespace: "it-master-platform"
+    dockerRegistry: "docker-registry.default.svc:5000"
+
+  externalUrl:
+    domain: "apps.crp-gate.ec1.aws.aztec.azcs.io"
+  host:
+    routeContext: "${{values.artifact_id}}-it-master-platform-crpdev"
+    deployDomain: "apps.crp.ec1.aws.aztec.cloud.allianz"
+    port: "8080"
+
+  resource:
+    cpuRequest: 200m
+    cpuLimit: 1
+    memoryRequest: 128Mi
+    memoryLimit: 1Gi
+  probe:
+    actuator: "actuator/health"
+    initialDelayLiveness: 130
+    initialDelayReadiness: 120
+  proxy:
+    proxyURL: "proxy.ec1.aws.aztec.cloud.allianz"
+    proxyPort: "'8888'"
+  log:
+    logPath: "/var/log/${deploy-name}"
+    logstashHost: "44.130.10.9"
+    logstashPort: "16160"
+
+
+config:
+  appConfig:
+    logging.level.org.springframework.web.filter.CommonsRequestLoggingFilter: DEBUG
+    management.endpoints.web.exposure.include: 'info,health,prometheus'
+
+  externalUrl:
+    enabled: true

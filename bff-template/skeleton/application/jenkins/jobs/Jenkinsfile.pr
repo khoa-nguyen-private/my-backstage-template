@@ -1,0 +1,13 @@
+@Library('BuildLib_v2')
+import com.allianz.gdf.jenkins.*
+
+gdfPipeline {
+  preset = Presets.JAVA_PR
+  project="motor-quote-and-buy-bff"
+  organization = 'gcj'
+  buildSlaveName = "maven-jdk-11"
+  qaGate.enabled = true
+  integrationTest.enabled = true
+  integrationTest.command = "sh ./application-quote-and-buy-expert/jenkins/jobs/run-integration-tests.sh"
+  deploy.enabled = false
+}

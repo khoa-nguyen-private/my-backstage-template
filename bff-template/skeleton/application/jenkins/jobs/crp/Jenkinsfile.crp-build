@@ -1,0 +1,28 @@
+@Library('BuildLib_v2')
+import com.allianz.gdf.jenkins.*
+
+gdfPipeline {
+  buildSlaveName = "maven-jdk-11"
+
+  preset=Presets.JAVA_STAGING_OC
+  project="${artifactId}"
+
+  qaGate.enabled = true
+  dependencyCheck.enabled = false
+  e2eTest.enabled=false
+  ocTag.enabled=true
+  ocDeploy.enabled=false
+  integrationTest.enabled=false
+
+  publish.cmd="mvn -B deploy  -DskipTests -Dmaven.main.skip -Dmaven.javadoc.skip -pl ${{values.artifact_id}} -am"
+  tag.versionSuffix = "-crp.core"
+  ocBuild.ocBuildName="${{values.artifact_id}}"
+  ocBuild.pomPath="./$${{values.artifact_id}}/pom.xml"
+  ocBuild.ocCluster="aws-ec1"
+  ocBuild.ocProject="it-master-platform"
+  ocBuild.templatePath="./${{values.artifact_id}}/jenkins/build/crp/build-template.yaml"
+  ocTag.ocBuildName="${{values.artifact_id}}"
+  ocTag.setVersion="core"
+  ocTag.ocCluster="aws-ec1"
+  ocTag.ocProject="it-master-platform"
+ }

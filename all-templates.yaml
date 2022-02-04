@@ -1,0 +1,11 @@
+apiVersion: backstage.io/v1alpha1
+kind: Location
+metadata:
+  name: gdf-templates
+  description: A collection of all GDF Backstage templates
+spec:
+  targets:
+    - ./taly-schematics/template.yaml
+    - ./bff-template/template.yaml
+    - ./angular-ndbx/template.yaml
+    - ./biz-devops/template.yaml

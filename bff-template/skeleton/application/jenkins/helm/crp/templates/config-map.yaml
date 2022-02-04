@@ -1,0 +1,24 @@
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: "{{ .Values.app.deployName }}-filebeat"
+  labels:
+    app: {{ .Values.app.deployName }}
+data:
+  filebeat.yml: |
+    logging.level: info
+    filebeat.inputs:
+    - type: log
+      paths:
+      - '{{ .Values.app.log.logPath }}/*.json.log'
+      json.keys_under_root: true
+      json.add_error_key: true
+    processors:
+    - add_tags:
+        tags: [{{ .Values.app.customerName }}-{{ .Values.app.environment }}]
+        target: "environment"
+    output.logstash:
+      hosts: ['{{ .Values.app.log.logstashHost }}:{{ .Values.app.log.logstashPort }}']
+      bulk_max_size: 16
+      pipelining: 1

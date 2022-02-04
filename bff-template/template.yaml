@@ -1,0 +1,104 @@
+apiVersion: backstage.io/v1beta2
+kind: Template
+metadata:
+  name: backend-journey
+  title: Backend For Frontend (BFF)
+  description: Creates a Backend For Frontend (BFF) application that connects the frontend app to the core insurance system.
+
+  tags:
+  - recommended
+  - springboot
+  - java
+  - itmp
+  - journey
+spec:
+  owner: gdf
+  type: service
+  path: '.'
+
+  parameters:
+    - title: Please fill in the following information
+      required:
+        - artifact_id
+        - group_id
+        - java_package_name
+      properties:
+        artifact_id:
+          title: artifact_id
+          type: string
+          description: The artifact id of the resultant jar.
+          ui:autofocus: true
+          ui:options:
+            rows: 5
+        group_id:
+          title: group_id
+          type: string
+          description: The group id of the resultant jar for example itmp.allianz
+          ui:autofocus: true
+          ui:options:
+            rows: 5
+        java_package_name:
+          title: Java Package Name
+          type: string
+          description: Name for the java package. eg (itmp.allianz.mo.bff)        
+        description:
+          title: Description
+          type: string
+          description: the project description
+        owner:
+          title: Owner
+          type: string
+          description: Owner of the component
+          ui:field: OwnerPicker
+          ui:options:
+            allowedKinds: 
+              - Group
+    - title: Choose a location  
+      required:
+        - repoUrl
+      properties: 
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.developer.allianz.io
+
+  steps:
+    - id: template
+      name: Fetch Skeleton + Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          description: '{{ parameters.description }}'
+          destination: '{{ parseRepoUrl parameters.repoUrl }}'
+          artifact_id: '{{ parameters.artifact_id }}'
+          group_id: '{{ parameters.group_id }}'
+          java_package_name: '{{ parameters.java_package_name }}'
+          owner: '{{ parameters.owner }}'
+          http_port: 8080
+
+    - id: publish
+      name: Publish
+      action: publish:github
+      input:
+        allowedHosts: ['github.developer.allianz.io']
+        description: 'This is {{ parameters.artifact_id }}'
+        repoUrl: '{{ parameters.repoUrl }}'
+
+    - id: register
+      name: Register
+      action: catalog:register
+      input:
+        repoContentsUrl: '{{ steps.publish.output.repoContentsUrl }}'
+        catalogInfoPath: '/catalog-info.yaml'
+
+    - id: generate-jenkins-jobs
+      name: Generate Jenkins Jobs
+      action: allianz:create-jobs   
+
+  output:
+    remoteUrl: '{{ steps.publish.output.remoteUrl }}'
+    entityRef: '{{ steps.register.output.entityRef }}'

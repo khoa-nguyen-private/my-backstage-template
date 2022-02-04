@@ -1,0 +1,3 @@
+# by default everything is granted
+*, **,, edit, allow
+*, **,, view, allow

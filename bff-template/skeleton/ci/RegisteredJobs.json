@@ -1,0 +1,10 @@
+[
+  {
+    "project": "{PROJECT_NAME_PLEASE_UPDATE}",
+    "folder":"{FOLDER_IN_JENKINS}",
+    "jobName": "{JENKINS_JOB_NAME}",
+    "jenkinsfile": "./Jenkinsfile.pr",
+    "branch": "master",
+    "buildTrigger":"github"
+  }
+]

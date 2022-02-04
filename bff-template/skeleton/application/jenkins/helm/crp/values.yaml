@@ -1,0 +1,4 @@
+app:
+  deployName: "${{values.artifact_id}}-bff"
+  customerName: "it-master-platform"
+  jarName: "${{values.artifact_id}}"

@@ -1,0 +1,105 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: build-jar-template
+  description: a build config template for building jar projects images
+objects:
+  - apiVersion: "v1"
+    kind: "BuildConfig"
+    metadata:
+      labels:
+        app: "${BUILD_NAME}"
+      name: "${BUILD_NAME}"
+    spec:
+      resources:
+        limits:
+          cpu: '1'
+          memory: 1Gi
+      runPolicy: "Serial"
+      source:
+        contextDir: "${CONTEXT_DIR}"
+        git:
+          uri: "${GITHUB_URL}"
+          ref: "${GITHUB_BRANCH}"
+        sourceSecret:
+          name: "${GITHUB_TOKEN}"
+      strategy:
+        dockerStrategy:
+          noCache: false
+          dockerfilePath: "${DOCKERFILE_LOC}"
+          env:
+            - name: VERSION
+              value: ${VERSION}
+            - name: ARTIFACT_ID
+              value: ${ARTIFACT_ID}
+            - name: NEXUS_URL
+              value: ${NEXUS_URL}
+            - name: GROUP_ID
+              value: ${GROUP_ID}
+          envFrom:
+            - configMapRef:
+                name: proxy-config
+          from:
+            kind: "DockerImage"
+            name: "${BASE_IMAGE}:${BASE_TAG}"
+      output:
+        to:
+          kind: "ImageStreamTag"
+          name: "${BUILD_NAME}:${IMAGE_VERSION}"
+  - apiVersion: v1
+    kind: "ImageStream"
+    metadata:
+      labels:
+        app: "${BUILD_NAME}"
+      name: "${BUILD_NAME}"
+    spec:
+      dockerImageRepository: "${DOCKER_REGISTRY}/${NAMESPACE}/${BUILD_NAME}"
+      tags:
+        - name: "${IMAGE_VERSION}"
+          from:
+            kind: "ImageStreamTag"
+            name: "${IMAGE_VERSION}"
+
+parameters:
+  - name: BUILD_NAME
+    description: Name of the build config
+    required: true
+  - name: IMAGE_VERSION
+    description: Name of the image config
+    value: "latest"
+  - name: DOCKER_REGISTRY
+    description: Docker registry where image is going to be located
+    value: "docker-registry.default.svc:5000"
+  - name: NEXUS_URL
+    value: "https://gdf-nexus.dev.adp.allianz/gdf-nexus"
+  - name: ARTIFACT_ID
+    description: Name of artifact (without .jar)
+    required: true
+  - name: GITHUB_URL
+    description: URL where Dockerfile is located
+    value: "https://github.developer.allianz.io/it-master-platform/mo-bff"
+  - name: GITHUB_BRANCH
+    description: GIT Branch
+    value: "master"
+  - name: GITHUB_TOKEN
+    description: Token to be used to clone repo
+    value: "build-secret"
+  - name: CONTEXT_DIR
+    value: jobs/build
+    description: location of the build files
+  - name: DOCKERFILE_LOC
+    description: Location in the repo where Dockefile is located
+    value: 'Dockerfile'
+  - name: NAMESPACE
+    value: "it-master-platform"
+  - name: BASE_IMAGE
+    description: Base image to build this image
+    value: "docker-registry.default.svc:5000/aztech-operations-shared/at_ubi8_minimal_openjdk11"
+  - name: BASE_TAG
+    description: Base image to build this image
+    value: "latest"
+  - name: VERSION
+    required: true
+  - name: GROUP_ID
+    description: Group ID
+    required: true

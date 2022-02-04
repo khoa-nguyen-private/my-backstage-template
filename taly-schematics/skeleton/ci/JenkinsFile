@@ -1,0 +1,61 @@
+@Library('BuildLib_v2')
+import com.allianz.gdf.jenkins.Presets
+def load_env() {
+	String deploy_to = "prod"
+	valuesJSON = readJSON (file: './ci/azure-env.json')
+  env.AZURE_ACCOUNT_ID = valuesJSON[deploy_to]["jenkinsSPId"]
+  env.AZURE_SUBSCRIPTION_ID = valuesJSON[deploy_to]["azureSubscriptionId"]
+  env.NEXUS_NPM_REPO = valuesJSON[deploy_to]["nexusNpmRepo"]
+  env.BUILD_ENV =  valuesJSON[deploy_to]["environment"]
+  env.PROJECT = valuesJSON[deploy_to]["project"]
+  env.STORAGE_ACCOUNT_NAME = valuesJSON[deploy_to]["account"]
+  env.STORAGE_TYPE = valuesJSON[deploy_to]["type"]
+  env.STORAGE_UPLOAD_BATCH = valuesJSON[deploy_to]["batch"]
+	env.STORAGE_UPLOAD_ARGUMENTS = valuesJSON[deploy_to]["arguments"]
+  env.CDN_RESOURCE_GROUP = valuesJSON[deploy_to]["cdnResourceGroup"]
+  env.CDN_ENDPOINT = valuesJSON[deploy_to]["cdnEndpoint"]
+  env.CDN_PROFILE = valuesJSON[deploy_to]["cdnProfile"]
+  env.CDN_FILE_LIST_TO_PURGE = valuesJSON[deploy_to]["cdnFileListToPurge"]
+}
+
+node('azure-cli') {
+  // optional pipeline setup
+  def preset = Presets.NPM
+  def stagesList = "StageAzureLogin StageAzureStorageUpload StageAzureLogout"
+  def build = new com.allianz.gdf.jenkins.PresetNpm(this, preset, [stagesList: stagesList])
+
+  build.toolNode.packageManager="npm"
+  build.toolNode.run()
+  build.source.run()
+
+  stage('Set environments'){
+      load_env()
+      build.applyEnv()
+  }
+
+  //Package install
+  build.packageInstall.nexusNpmRepo="npm-public"
+  build.packageInstall.install_command="npm install"
+  build.packageInstall.run()
+
+  //Build
+  build.build.buildCommand="npm run generate"
+  build.build.run()
+  
+   stage('generate dist') {
+      script {
+       	sh "cd ./generated && npm run build"
+      }
+    }
+  //Azure Login
+  build.azureLogin.run()
+
+  //Upload
+  build.azureStorageUpload.source="./generated/dist/my-itmp-app"
+  build.azureStorageUpload.destination="'\$web'"
+  build.azureStorageUpload.run()
+  build.azureInvalidateCDNCache.run()
+
+  //Logout
+  build.azureLogout.run()
+}

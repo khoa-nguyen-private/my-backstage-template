@@ -1,0 +1,43 @@
+@Library('BuildLib_v2@crp')
+import com.allianz.gdf.jenkins.*
+
+
+node('azure-cli'){
+    preset = Presets.JAVA_DEPLOY_OC
+	  build = new com.allianz.gdf.jenkins.PresetJavaDeployOc(this, preset)
+    environment = 'dev'
+	  project = "${artifactId}"
+    build.ocDeploy.enabled=false
+
+    build.helmDeploy.enabled=true
+    build.helmDeploy.release="${artifactId}"
+    build.helmDeploy.dryRun=false
+    build.helmDeploy.chart="${artifactId}/jenkins/helm/crp/"
+    build.helmDeploy.createNameSpace=false
+    build.helmDeploy.namespace="it-master-platform-${environment}"
+    // if not force, then the deploy will not be replaced, because the image tag ("core") did not change
+    build.helmDeploy.force=true
+    build.helmDeploy.setAppImageTag="core"
+    build.helmDeploy.customValuesFile="${artifactId}/jenkins/helm/crp/values/values-dev.yaml"
+    build.integrationTest.enabled = false
+    slackTeamDomain = "itmpgroup"
+    slackCredentialID = "adp-tools-service-owners-slack-itmpgroup-token"
+    slackChannel = "itmp_qb-expert_migration"
+
+    resultStatus = false
+
+    try {
+
+      build.source.run()
+      build.applyEnv()
+      build.helmDeploy.run()
+      resultStatus = true
+
+    } catch (Exception e) {
+    #set( $dollar = '$' )
+      slackSend(channel: slackChannel, color:  resultStatus? "#00FF00" : "#FF0000", message: "${dollar}{resultStatus? "SUCCESS" : "FAILURE"} ${e.getMessage()} : Job ${env.JOB_NAME} [${env.BUILD_NUMBER}] (${env.BUILD_URL})", teamDomain: slackTeamDomain, tokenCredentialId: slackCredentialID)
+      echo(e.getMessage())
+      throw e
+    }
+
+}

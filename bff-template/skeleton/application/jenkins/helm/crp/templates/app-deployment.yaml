@@ -1,0 +1,147 @@
+---
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  name: {{ .Values.app.deployName }}
+  labels:
+    app: {{ .Values.app.deployName }}
+  annotations:
+    template.alpha.openshift.io/wait-for-ready: "true"
+spec:
+  strategy:
+    type: Rolling
+    rollingParams:
+      updatePeriodSeconds: 1
+      intervalSeconds: 1
+      timeoutSeconds: 300
+    resources: {}
+  triggers:
+    - type: ConfigChange
+  replicas: 1
+  selector:
+    deploymentconfig: {{ .Values.app.deployName }}
+  template:
+    metadata:
+      labels:
+        deploymentconfig: {{ .Values.app.deployName }}
+        # to force new deployment even if image tag didn't change
+        deploy-date: {{ date "2006-01-02T15_04_05" now | quote }}
+    spec:
+      containers:
+        - name: {{ .Values.app.deployName }}
+          image: "{{ .Values.app.image.dockerRegistry }}/{{ .Values.app.image.imageStreamNamespace }}/{{ .Values.app.image.imageName }}:{{ .Values.app.image.tag }}"
+          command: ["/usr/java/latest/bin/java"]
+          args:
+            - '-Dhttps.proxyHost=$(PROXY_URL)'
+            - '-Dhttps.proxyPort=$(PROXY_PORT)'
+            - '-Dhttps.nonProxyHosts=$(nonProxyHosts)'
+            - '-Dhttp.nonProxyHosts=$(nonProxyHosts)'
+            - '-jar'
+            - '/jar/{{ .Values.app.jarName }}.jar'
+            - '--spring.profiles.active={{ .Values.app.springProfiles }}'
+          env:
+            - name: LOG_PATH
+              value: "{{ .Values.app.log.logPath }}"
+            - name: PROXY_URL
+              value: {{ .Values.app.proxy.proxyURL }}
+            - name: PROXY_PORT
+              value: {{ .Values.app.proxy.proxyPort }}
+          {{ if .Values.app.probe.actuator }}
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: "{{ .Values.app.probe.actuator }}"
+              port: {{ .Values.app.host.port }}
+              scheme: HTTP
+            initialDelaySeconds: {{ .Values.app.probe.initialDelayLiveness }}
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: "{{ .Values.app.probe.actuator }}"
+              port: {{ .Values.app.host.port }}
+              scheme: HTTP
+            initialDelaySeconds: {{ .Values.app.probe.initialDelayReadiness }}
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          {{ end }}
+          ports:
+            - containerPort: {{ .Values.app.host.port }}
+              protocol: TCP
+          resources:
+            limits:
+              cpu : {{ .Values.app.resource.cpuLimit }}
+              memory: {{ .Values.app.resource.memoryLimit }}
+            requests:
+              cpu: {{ .Values.app.resource.cpuRequest }}
+              memory: {{ .Values.app.resource.memoryRequest }}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: Always
+          securityContext:
+            capabilities: {}
+            privileged: false
+          volumeMounts:
+            - name: log-data-volume
+              mountPath: "{{ .Values.app.log.logPath }}"
+        - name: filebeat
+          image: '{{ .Values.app.image.dockerRegistry }}/{{ .Values.app.image.imageStreamNamespace }}/filebeat:latest'
+          command: ["/usr/share/filebeat/filebeat"]
+          args:
+            - "-c"
+            - "/usr/share/filebeat/custom-config/filebeat.yml"
+            - "-e"
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            - name: log-data-volume
+              mountPath: "{{ .Values.app.log.logPath }}"
+              readOnly: true
+            - name: filebeat-conf-volume
+              mountPath: /usr/share/filebeat/custom-config
+          resources:
+            limits:
+              memory: 200Mi
+            requests:
+              cpu: 100m
+              memory: 100Mi
+      restartPolicy: Always
+      dnsPolicy: ClusterFirst
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - name: log-data-volume
+          emptyDir: {}
+        - name: filebeat-conf-volume
+          configMap:
+            name: {{ .Values.app.deployName }}-filebeat
+            defaultMode: 420
+            items:
+              - key: filebeat.yml
+                path: filebeat.yml
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.app.deployName }}
+  labels:
+    app: {{ .Values.app.deployName }}
+  annotations:
+    template.alpha.openshift.io/wait-for-ready: "true"
+spec:
+  ports:
+    - name: "{{ .Values.app.deployName }}-tcp"
+      port: {{ .Values.app.host.port }}
+      protocol: TCP
+      targetPort: {{ .Values.app.host.port }}
+  selector:
+    deploymentconfig: {{ .Values.app.deployName }}
+  sessionAffinity: None
+  type: ClusterIP
+

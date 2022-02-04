@@ -1,0 +1,108 @@
+{
+  "$schema": "../node_modules/@allianz/taly-schematics/pages.json",
+  "title": "${{values.app_name}}",
+  "libraries": [{
+    "package": "@itmp/building-blocks",
+    "version": "latest"
+  }],
+  "pages": [
+    {
+      "id": "my-page-a",
+      "title": "My page A",
+      "blocks": [
+        {
+          "id": "placeholder-a",
+          "selector": "bb-placeholder",
+          "module": "PlaceholderModule",
+          "package": "@itmp/building-blocks"
+        }
+      ],
+      "pageData": {
+        "stage": {
+          "headline": "${{values.headline}}",
+          "subHeadline": "Topline text",
+          "startImage": "assets/small-stage-image-start.svg",
+          "endImage": "assets/small-stage-image-end.svg",
+          "narrowImage": "assets/small-stage-image-narrow-screen.svg"
+        }
+      }
+    },
+    {
+      "id": "my-page-b",
+      "title": "My page B",
+      "blocks": [
+        {
+          "id": "placeholder-b",
+          "selector": "bb-placeholder",
+          "module": "PlaceholderModule",
+          "package": "@itmp/building-blocks"
+        },
+        {
+          "id": "placeholder-c",
+          "selector": "bb-placeholder",
+          "module": "PlaceholderModule",
+          "package": "@itmp/building-blocks"
+        }
+      ],
+      "pageData": {
+        "stage": {
+          "headline": "Another Headline",
+          "subHeadline": "with some text but only an end image",
+          "endImage": "assets/small-stage-image-end.svg",
+          "narrowImage": "assets/small-stage-image-narrow-screen.svg"
+        },
+        "pageActionConfig": {
+          "nextButtonLabel": "Continue",
+          "backButtonLabel": "Cancel"
+        }
+      }
+    },
+    {
+      "id": "my-page-c",
+      "title": "My page C",
+      "blocks": [
+        {
+          "id": "placeholder-c",
+          "selector": "bb-placeholder",
+          "module": "PlaceholderModule",
+          "package": "@itmp/building-blocks"
+        }
+      ]
+    }
+  ],
+  "frame" : {
+    "navigation": {
+      "sections": [{
+        "label": "The first part",
+        "id": "section-a",
+        "pages": ["my-page-a", "my-page-b"]
+      },
+        {
+          "label": "The last part",
+          "id": "section-b",
+          "pages": ["my-page-c"]
+        }]
+    },
+    "footer": {
+      "copyRightText": "Allianz 2020",
+      "links": [
+        {
+          "label": "Imprint",
+          "path": "/",
+          "external": false
+        },
+        {
+          "label": "Privacy Policy",
+          "path": "#",
+          "external": true
+        },
+        {
+          "label": "Terms of Use",
+          "path": "#",
+          "external": true
+        }
+      ]
+    },
+    "chromeless": false
+  }
+}

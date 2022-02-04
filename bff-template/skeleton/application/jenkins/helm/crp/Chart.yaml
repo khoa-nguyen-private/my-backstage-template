@@ -1,0 +1,4 @@
+apiVersion: v1
+description: A Helm chart for Kubernetes
+name: ${{values.artifact_id}}-bff
+version: 0.0.1
